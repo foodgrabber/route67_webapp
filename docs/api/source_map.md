@@ -111,7 +111,7 @@ curl -sL -u "$GRABMAPS_DOCS_BASIC_USER:$GRABMAPS_DOCS_BASIC_PASS" \
 
 - **Docs site:** https://maps.grab.com/developer/documentation (Basic Auth — see `api.md`)
 - **Developer portal:** https://maps.grab.com/developer (Google / GitHub SSO)
-- **Hackathon WhatsApp:** see [`../luma_project.md`](../luma_project.md)
+- **Hackathon WhatsApp:** see [`../hackathon/luma_project.md`](../hackathon/luma_project.md)
 
 ## How this docs tree was compiled
 

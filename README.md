@@ -26,6 +26,6 @@ Find the **67 spots** near you — then race other players to check into the mos
 
 ## Docs
 
-- [`docs/context.md`](docs/context.md) — hackathon context, credentials, tracks, judging, API setup.
-- [`docs/luma_project.md`](docs/luma_project.md) — original Luma event page.
-- [`docs/GrabMaps Hackathon Slides.pdf`](<docs/GrabMaps Hackathon Slides.pdf>) — organizer slides.
+- [`docs/hackathon/context.md`](docs/hackathon/context.md) — hackathon context, credentials, tracks, judging, API setup.
+- [`docs/hackathon/luma_project.md`](docs/hackathon/luma_project.md) — original Luma event page.
+- [`docs/hackathon/GrabMaps Hackathon Slides.pdf`](<docs/hackathon/GrabMaps Hackathon Slides.pdf>) — organizer slides.

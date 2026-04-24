@@ -15,10 +15,10 @@ No build, test, or lint commands apply. Future application code may land here or
 
 **For project questions** (scope, track, logistics), read in this order:
 
-1. **`docs/context.md`** — canonical project context: concept, track, judging criteria, GrabMaps portal setup, backend-proxy best practice, inspiration demos, open design questions.
+1. **`docs/hackathon/context.md`** — canonical project context: concept, track, judging criteria, GrabMaps portal setup, backend-proxy best practice, inspiration demos, open design questions.
 2. **`README.md`** — one-page project pitch and how-it-works loop.
-3. **`docs/luma_project.md`** — raw Luma event page text (logistics, schedule, organizer messages).
-4. **`docs/GrabMaps Hackathon Slides.pdf`** — organizer kickoff slides; only open pages you need via the Read tool's `pages` parameter.
+3. **`docs/hackathon/luma_project.md`** — raw Luma event page text (logistics, schedule, organizer messages).
+4. **`docs/hackathon/GrabMaps Hackathon Slides.pdf`** — organizer kickoff slides; only open pages you need via the Read tool's `pages` parameter.
 
 **For API / implementation questions**, start at **`docs/api/source_map.md`** — it indexes the 22-file API tree (see next section).
 
@@ -49,4 +49,4 @@ Every REST endpoint and MCP tool carries a stability tag: `[upstream-documented]
 
 ## Open Questions the User Hasn't Resolved
 
-Tracked in `docs/context.md` "Open Questions" — source of the 67 spots, scoring model, session shape, auth. Don't pick one silently; ask or surface the tradeoff.
+Tracked in `docs/hackathon/context.md` "Open Questions" — source of the 67 spots, scoring model, session shape, auth. Don't pick one silently; ask or surface the tradeoff.
