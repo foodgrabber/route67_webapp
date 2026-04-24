@@ -1,0 +1,246 @@
+'use client';
+
+// MapLibre wrapper that loads the GrabMaps style via /api/map-style,
+// renders spots as a GeoJSON circle layer, and optionally draws a radius circle
+// around the user.
+
+import { useEffect, useRef } from 'react';
+import maplibregl, { type Map as MapLibreMap } from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
+
+export type GrabMapSpot = {
+  id: string;
+  lat: number;
+  lng: number;
+  rarity: 'common' | 'rare' | 'legendary';
+  claimed: boolean;
+  name: string;
+};
+
+interface GrabMapProps {
+  initialCenter: [number, number]; // [lng, lat]
+  initialZoom?: number;
+  spots?: GrabMapSpot[];
+  radiusKm?: number;
+  userLocation?: { lat: number; lng: number } | null;
+  onSpotClick?: (spotId: string) => void;
+  className?: string;
+}
+
+type FC = GeoJSON.FeatureCollection;
+
+const EMPTY_FC: FC = { type: 'FeatureCollection', features: [] };
+
+function spotsToFC(spots: GrabMapSpot[] | undefined): FC {
+  if (!spots || spots.length === 0) return EMPTY_FC;
+  return {
+    type: 'FeatureCollection',
+    features: spots.map((s) => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [s.lng, s.lat] },
+      properties: { id: s.id, rarity: s.rarity, claimed: s.claimed, name: s.name },
+    })),
+  };
+}
+
+function userToFC(u: { lat: number; lng: number } | null | undefined): FC {
+  if (!u) return EMPTY_FC;
+  return {
+    type: 'FeatureCollection',
+    features: [
+      {
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [u.lng, u.lat] },
+        properties: {},
+      },
+    ],
+  };
+}
+
+// Build a 64-point polygon ring approximating a circle of `radiusKm` around
+// `[lng,lat]`, using the standard spherical offset formula.
+function circlePolygon(
+  center: [number, number],
+  radiusKm: number,
+  steps = 64,
+): GeoJSON.Feature<GeoJSON.Polygon> {
+  const [lng, lat] = center;
+  const latRad = (lat * Math.PI) / 180;
+  const km = radiusKm;
+  const coords: [number, number][] = [];
+  for (let i = 0; i <= steps; i++) {
+    const theta = (i / steps) * 2 * Math.PI;
+    const dx = km * Math.cos(theta);
+    const dy = km * Math.sin(theta);
+    const dLng = dx / (111.32 * Math.cos(latRad));
+    const dLat = dy / 110.574;
+    coords.push([lng + dLng, lat + dLat]);
+  }
+  return {
+    type: 'Feature',
+    geometry: { type: 'Polygon', coordinates: [coords] },
+    properties: {},
+  };
+}
+
+function radiusFC(
+  center: [number, number] | null,
+  radiusKm: number | undefined,
+): FC {
+  if (!center || !radiusKm || radiusKm <= 0) return EMPTY_FC;
+  return { type: 'FeatureCollection', features: [circlePolygon(center, radiusKm)] };
+}
+
+export function GrabMap({
+  initialCenter,
+  initialZoom = 14,
+  spots,
+  radiusKm,
+  userLocation,
+  onSpotClick,
+  className,
+}: GrabMapProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<MapLibreMap | null>(null);
+  const loadedRef = useRef(false);
+  const onSpotClickRef = useRef(onSpotClick);
+
+  useEffect(() => {
+    onSpotClickRef.current = onSpotClick;
+  }, [onSpotClick]);
+
+  // Mount + teardown the map once.
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const map = new maplibregl.Map({
+      container: containerRef.current,
+      style: '/api/map-style',
+      center: initialCenter,
+      zoom: initialZoom,
+      attributionControl: { compact: true },
+    });
+    mapRef.current = map;
+
+    map.on('load', () => {
+      loadedRef.current = true;
+
+      map.addSource('radius', { type: 'geojson', data: EMPTY_FC });
+      map.addLayer({
+        id: 'radius-fill',
+        type: 'fill',
+        source: 'radius',
+        paint: { 'fill-color': '#FF3D8A', 'fill-opacity': 0.15 },
+      });
+      map.addLayer({
+        id: 'radius-stroke',
+        type: 'line',
+        source: 'radius',
+        paint: { 'line-color': '#FF3D8A', 'line-opacity': 0.6, 'line-width': 2 },
+      });
+
+      map.addSource('spots', { type: 'geojson', data: EMPTY_FC });
+      map.addLayer({
+        id: 'spots-layer',
+        type: 'circle',
+        source: 'spots',
+        paint: {
+          'circle-radius': 10,
+          'circle-color': [
+            'match',
+            ['get', 'rarity'],
+            'legendary', '#FFB020',
+            'rare', '#2A7FFF',
+            '#8AA296',
+          ],
+          'circle-stroke-width': 3,
+          'circle-stroke-color': [
+            'case',
+            ['get', 'claimed'], '#00B14F', '#FFFFFF',
+          ],
+        },
+      });
+
+      map.addSource('user', { type: 'geojson', data: EMPTY_FC });
+      map.addLayer({
+        id: 'user-halo',
+        type: 'circle',
+        source: 'user',
+        paint: {
+          'circle-radius': 18,
+          'circle-color': '#2A7FFF',
+          'circle-opacity': 0.18,
+        },
+      });
+      map.addLayer({
+        id: 'user-dot',
+        type: 'circle',
+        source: 'user',
+        paint: {
+          'circle-radius': 7,
+          'circle-color': '#2A7FFF',
+          'circle-stroke-color': '#FFFFFF',
+          'circle-stroke-width': 3,
+        },
+      });
+
+      // Seed sources with whatever the latest props are at load time.
+      (map.getSource('spots') as maplibregl.GeoJSONSource).setData(spotsToFC(spots));
+      (map.getSource('user') as maplibregl.GeoJSONSource).setData(userToFC(userLocation ?? null));
+      (map.getSource('radius') as maplibregl.GeoJSONSource).setData(
+        radiusFC(userLocation ? [userLocation.lng, userLocation.lat] : initialCenter, radiusKm),
+      );
+
+      map.on('click', 'spots-layer', (e) => {
+        const f = e.features?.[0];
+        const id = f?.properties?.id as string | undefined;
+        if (id && onSpotClickRef.current) onSpotClickRef.current(id);
+      });
+      map.on('mouseenter', 'spots-layer', () => {
+        map.getCanvas().style.cursor = 'pointer';
+      });
+      map.on('mouseleave', 'spots-layer', () => {
+        map.getCanvas().style.cursor = '';
+      });
+    });
+
+    return () => {
+      loadedRef.current = false;
+      map.remove();
+      mapRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Update spots source when `spots` changes.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loadedRef.current) return;
+    const src = map.getSource('spots') as maplibregl.GeoJSONSource | undefined;
+    if (src) src.setData(spotsToFC(spots));
+  }, [spots]);
+
+  // Update user source when location changes.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loadedRef.current) return;
+    const src = map.getSource('user') as maplibregl.GeoJSONSource | undefined;
+    if (src) src.setData(userToFC(userLocation ?? null));
+  }, [userLocation]);
+
+  // Update radius polygon when radius or center changes.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loadedRef.current) return;
+    const src = map.getSource('radius') as maplibregl.GeoJSONSource | undefined;
+    if (!src) return;
+    const center: [number, number] = userLocation
+      ? [userLocation.lng, userLocation.lat]
+      : initialCenter;
+    src.setData(radiusFC(center, radiusKm));
+  }, [radiusKm, userLocation, initialCenter]);
+
+  return <div ref={containerRef} className={className ?? 'w-full h-full'} />;
+}
+
+export default GrabMap;

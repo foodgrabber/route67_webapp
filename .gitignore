@@ -8,6 +8,13 @@ Thumbs.db
 *.swp
 *~
 
+# Node / Next.js
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
 # Secrets
 .env
 .env.local
@@ -18,3 +25,4 @@ supabase/.temp/
 
 # Vercel CLI
 .vercel/
+.vercel
