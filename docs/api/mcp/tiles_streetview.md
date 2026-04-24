@@ -6,6 +6,8 @@ Three tools: one for vector tiles, two for 360° photos.
 
 ## `get_tile` `[playground-only]`
 
+**Full name:** `mcp__grab-maps-playground__get_tile`
+
 Fetch a map tile by z/x/y.
 
 ### Input
@@ -24,6 +26,8 @@ Tile data (binary-ish, depends on `type`).
 ---
 
 ## `get_street_view` `[playground-only]`
+
+**Full name:** `mcp__grab-maps-playground__get_street_view`
 
 Find nearby 360° photos around a coordinate. Thin layer over [`/api/v1/openstreetcam-api/2.0/photo/`](../rest/street_view.md#-api-v1-openstreetcam-api-2-0-photo).
 
@@ -58,6 +62,8 @@ Note the tool currently returns a **pointer to the correct REST endpoint** rathe
 ---
 
 ## `open_street_view` `[playground-only]` (mutating)
+
+**Full name:** `mcp__grab-maps-playground__open_street_view`
 
 Code-generating. Opens the 360° viewer in the playground UI at a location.
 

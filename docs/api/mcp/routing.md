@@ -6,6 +6,8 @@ Seven tools. Six are code-generating (produce JS for the playground's `mapInstan
 
 ## `add_waypoint` `[playground-only]` (mutating)
 
+**Full name:** `mcp__grab-maps-playground__add_waypoint`
+
 Adds one waypoint to the route planner.
 
 ### Input
@@ -22,6 +24,8 @@ JS snippet calling `mapInstance.addWaypoint(name, location)`.
 ---
 
 ## `add_route` `[playground-only]` (mutating)
+
+**Full name:** `mcp__grab-maps-playground__add_route`
 
 Draws a route between two points on the map.
 
@@ -43,6 +47,8 @@ JS snippet calling `mapInstance.addRoute(start, end, opts)`.
 
 ## `calculate_waypoint_route` `[playground-only]` (mutating)
 
+**Full name:** `mcp__grab-maps-playground__calculate_waypoint_route`
+
 Computes a route through all previously added waypoints (needs ≥ 2).
 
 ### Input
@@ -56,6 +62,8 @@ JS snippet calling `mapInstance.calculateWaypointRoute()`.
 ---
 
 ## `clear_route` `[playground-only]` (mutating)
+
+**Full name:** `mcp__grab-maps-playground__clear_route`
 
 Removes the displayed route. Keeps waypoints.
 
@@ -71,6 +79,8 @@ JS snippet calling `mapInstance.clearRoute()`.
 
 ## `clear_waypoints` `[playground-only]` (mutating)
 
+**Full name:** `mcp__grab-maps-playground__clear_waypoints`
+
 Removes all waypoints and the route.
 
 ### Input
@@ -84,6 +94,8 @@ JS snippet calling `mapInstance.clearWaypoints()`.
 ---
 
 ## `route_waypoints` `[playground-only]` (mutating)
+
+**Full name:** `mcp__grab-maps-playground__route_waypoints`
 
 One-shot: clear existing waypoints, add a new list, compute the route.
 
@@ -103,6 +115,8 @@ JS snippet that clears, adds, and calculates in sequence.
 ---
 
 ## `navigation` `[upstream-documented]`
+
+**Full name:** `mcp__grab-maps-playground__navigation`
 
 **Data-fetching.** Compute a route via `/api/v1/maps/eta/v1/direction` — not the turn-by-turn navigation endpoint. The MCP tool is misleadingly named; treat it as "get_directions".
 

@@ -6,6 +6,8 @@ Five tools. All code-generating (targets the playground UI's `mapInstance`). All
 
 ## `fly_to` (mutating)
 
+**Full name:** `mcp__grab-maps-playground__fly_to`
+
 Smoothly pan the map to a location.
 
 ### Input
@@ -26,6 +28,8 @@ await mapInstance.flyTo([106.8272, -6.1754], 14);
 ---
 
 ## `control_layers` (mutating on `show`/`hide`/`toggle`, config-only on `set_*`)
+
+**Full name:** `mcp__grab-maps-playground__control_layers`
 
 Show / hide map layers, or generate a config with layer defaults.
 
@@ -59,6 +63,8 @@ JS snippet calling `mapInstance.setLayerVisibility(layer, visible)` or a config 
 
 ## `update_map_state_from_url` (read-only)
 
+**Full name:** `mcp__grab-maps-playground__update_map_state_from_url`
+
 Parse a GrabMaps playground URL (or iframe src) and extract its `{ lat, lng, zoom }`.
 
 ### Input
@@ -77,6 +83,8 @@ Useful for syncing agent context to the user's current view.
 
 ## `toggle_waypoints_modal` (mutating)
 
+**Full name:** `mcp__grab-maps-playground__toggle_waypoints_modal`
+
 Show / hide / toggle the waypoint planner modal.
 
 ### Input
@@ -92,6 +100,8 @@ JS snippet calling `mapInstance.setWaypointsModalVisible()` or `.toggleWaypoints
 ---
 
 ## `open_poi` (mutating)
+
+**Full name:** `mcp__grab-maps-playground__open_poi`
 
 Open the POI detail modal at a coordinate or place name.
 

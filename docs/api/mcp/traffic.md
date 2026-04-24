@@ -6,6 +6,8 @@ Three tools. All data-fetching, all `[playground-only]`. Each is a thin wrapper 
 
 ## `get_traffic`
 
+**Full name:** `mcp__grab-maps-playground__get_traffic`
+
 Real-time traffic speeds within a bbox.
 
 ### Input
@@ -31,6 +33,8 @@ Central Singapore at zoom 14 bbox returns ~420 KB of link data. Narrow the bbox 
 
 ## `get_traffic_tile`
 
+**Full name:** `mcp__grab-maps-playground__get_traffic_tile`
+
 Traffic data for one tile. Returns GeoJSON `FeatureCollection`.
 
 ### Input
@@ -51,6 +55,8 @@ GeoJSON features with `speed`, `congestion`, `road_class`, `delay` properties + 
 ---
 
 ## `get_incidents`
+
+**Full name:** `mcp__grab-maps-playground__get_incidents`
 
 Traffic incidents (roadworks, accidents, closures) by bbox, tile, or circle.
 

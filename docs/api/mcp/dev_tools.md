@@ -6,6 +6,8 @@ Four tools. Schemas / examples / endpoint lists — the tools you'd reach for *w
 
 ## `discover_api_endpoints` `[playground-only]`
 
+**Full name:** `mcp__grab-maps-playground__discover_api_endpoints`
+
 The canonical source of truth for what REST endpoints the playground gateway exposes. Used to generate [`../rest/README.md`](../rest/README.md).
 
 ### Input
@@ -39,6 +41,8 @@ Call this periodically during the hackathon to catch endpoint additions / remova
 ---
 
 ## `generate_builder_map_code` `[playground-only]`
+
+**Full name:** `mcp__grab-maps-playground__generate_builder_map_code`
 
 Returns a complete HTML + JS (or TS) scaffold using the GrabMaps library's config-based API. **Start here** for any new page — regenerate rather than hand-editing config.
 
@@ -85,6 +89,8 @@ Drop the returned HTML into a static file and open in a browser.
 
 ## `grabmaps_library_vibe_snippet` `[playground-only]`
 
+**Full name:** `mcp__grab-maps-playground__grabmaps_library_vibe_snippet`
+
 On-demand code snippet for a specific library integration + task. Great for "how do I do X with GrabMapsLib?" questions.
 
 ### Input
@@ -122,6 +128,8 @@ On-demand code snippet for a specific library integration + task. Great for "how
 ---
 
 ## `create_api_key` `[playground-only]` (mutating)
+
+**Full name:** `mcp__grab-maps-playground__create_api_key`
 
 Creates a new API key for your playground account. **Don't call this during exploration** — every call burns a key slot.
 
