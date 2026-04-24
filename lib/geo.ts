@@ -35,3 +35,27 @@ export const POINTS_BY_RARITY: { common: 50; rare: 150; legendary: 500 } = {
   rare: 150,
   legendary: 500,
 };
+
+// Greedy nearest-neighbor tour from `origin` through `points`. Returns the
+// points in an order that's reasonable to walk — not optimal (TSP is NP-hard),
+// but good enough to draw a suggested hunt path.
+export function nearestNeighborOrder<T extends LatLng>(origin: LatLng, points: T[]): T[] {
+  const remaining = [...points];
+  const ordered: T[] = [];
+  let cursor: LatLng = origin;
+  while (remaining.length > 0) {
+    let bestIdx = 0;
+    let bestDist = haversineMeters(cursor, remaining[0]);
+    for (let i = 1; i < remaining.length; i++) {
+      const d = haversineMeters(cursor, remaining[i]);
+      if (d < bestDist) {
+        bestDist = d;
+        bestIdx = i;
+      }
+    }
+    const next = remaining.splice(bestIdx, 1)[0];
+    ordered.push(next);
+    cursor = next;
+  }
+  return ordered;
+}

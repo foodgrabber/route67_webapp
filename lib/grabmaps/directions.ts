@@ -67,13 +67,16 @@ export function decodePolyline(encoded: string, precision = 6): [number, number]
 export async function fetchRoute(
   start: LatLng,
   end: LatLng,
-  opts?: { profile?: string },
+  opts?: { profile?: string; waypoints?: LatLng[] },
 ): Promise<GrabRoute> {
   const apiKey = getApiKey();
   const url = buildGrabUrl('/api/v1/maps/eta/v1/direction');
   // `coordinates` is a repeated param — `URL.searchParams.set` would collapse
-  // both values, so append explicitly.
+  // both values, so append explicitly. Start, then any waypoints in order, then end.
   url.searchParams.append('coordinates', `${start.lng},${start.lat}`);
+  for (const w of opts?.waypoints ?? []) {
+    url.searchParams.append('coordinates', `${w.lng},${w.lat}`);
+  }
   url.searchParams.append('coordinates', `${end.lng},${end.lat}`);
   url.searchParams.set('profile', opts?.profile || 'driving');
   url.searchParams.set('overview', 'full');

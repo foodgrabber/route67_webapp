@@ -122,6 +122,7 @@ export function GrabMap({
   const loadedRef = useRef(false);
   const onSpotClickRef = useRef(onSpotClick);
   const routeFittedRef = useRef(false);
+  const spotsFittedRef = useRef(false);
 
   useEffect(() => {
     onSpotClickRef.current = onSpotClick;
@@ -157,21 +158,30 @@ export function GrabMap({
         paint: { 'line-color': '#FF3D8A', 'line-opacity': 0.6, 'line-width': 2 },
       });
 
-      // Route layers go under spots. White casing first, Grab-green stroke on top.
+      // Route layers go under spots. Widths + opacities match
+      // example/frontend/public/app.js (route-line-casing + route-line).
       map.addSource('route', { type: 'geojson', data: EMPTY_LINE });
       map.addLayer({
         id: 'route-casing',
         type: 'line',
         source: 'route',
         layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: { 'line-color': '#FFFFFF', 'line-width': 8, 'line-opacity': 0.9 },
+        paint: {
+          'line-color': '#FFFFFF',
+          'line-opacity': 0.92,
+          'line-width': ['interpolate', ['linear'], ['zoom'], 10, 9, 15, 16],
+        },
       });
       map.addLayer({
         id: 'route-stroke',
         type: 'line',
         source: 'route',
         layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: { 'line-color': '#00B14F', 'line-width': 4.5 },
+        paint: {
+          'line-color': '#00B14F',
+          'line-opacity': 0.98,
+          'line-width': ['interpolate', ['linear'], ['zoom'], 10, 5, 15, 10],
+        },
       });
 
       map.addSource('spots', { type: 'geojson', data: EMPTY_FC });
@@ -266,12 +276,31 @@ export function GrabMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Update spots source when `spots` changes.
+  // Update spots source when `spots` changes. Also fit the camera to the
+  // spots bounds the first time a non-empty array arrives — this prevents the
+  // map from stranding the user at the fallback centre when spots cluster off
+  // the initial viewport (e.g. radius-mode origin != hunt origin while data
+  // loads async). Route mode handles its own fit via routeFittedRef.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !loadedRef.current) return;
     const src = map.getSource('spots') as maplibregl.GeoJSONSource | undefined;
     if (src) src.setData(spotsToFC(spots));
+
+    if (
+      !spotsFittedRef.current &&
+      !routeFittedRef.current &&
+      spots &&
+      spots.length > 0
+    ) {
+      const first: [number, number] = [spots[0].lng, spots[0].lat];
+      const bounds = spots.reduce(
+        (b, s) => b.extend([s.lng, s.lat] as [number, number]),
+        new maplibregl.LngLatBounds(first, first),
+      );
+      map.fitBounds(bounds, { padding: 80, maxZoom: 16, duration: 400 });
+      spotsFittedRef.current = true;
+    }
   }, [spots]);
 
   // Update user source when location changes.

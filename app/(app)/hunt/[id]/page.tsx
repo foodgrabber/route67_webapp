@@ -203,16 +203,22 @@ export default function HuntPage({ params }: { params: Promise<{ id: string }> }
   return (
     <div className="relative w-full h-[calc(100vh-5rem)] overflow-hidden">
       <div className="absolute inset-0">
-        <GrabMap
-          initialCenter={initialCenter}
-          initialZoom={14}
-          spots={mapSpots}
-          radiusKm={routeGeoJson ? undefined : hunt?.radius_km}
-          userLocation={userPos}
-          routeGeoJson={routeGeoJson}
-          onSpotClick={(id) => setSelectedId(id)}
-          className="w-full h-full"
-        />
+        {hunt ? (
+          <GrabMap
+            initialCenter={initialCenter}
+            initialZoom={14}
+            spots={mapSpots}
+            radiusKm={routeGeoJson ? undefined : hunt.radius_km}
+            userLocation={userPos}
+            routeGeoJson={routeGeoJson}
+            onSpotClick={(id) => setSelectedId(id)}
+            className="w-full h-full"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-bg">
+            <div className="text-muted font-body text-sm">Loading hunt…</div>
+          </div>
+        )}
       </div>
 
       {/* Header: progress + end button */}
