@@ -1,0 +1,3 @@
+[submodule "example/frontend"]
+	path = example/frontend
+	url = https://github.com/foodgrabber/frontend
