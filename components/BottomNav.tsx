@@ -73,6 +73,27 @@ function TrophyIcon({ active }: { active: boolean }) {
   );
 }
 
+function PeopleIcon({ active }: { active: boolean }) {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={active ? 2.25 : 2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="9" cy="8" r="3.25" />
+      <path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" />
+      <circle cx="17" cy="7" r="2.5" />
+      <path d="M15 14.2c.63-.27 1.3-.4 2-.4 2.8 0 5 2.2 5 5" />
+    </svg>
+  );
+}
+
 const TABS: Tab[] = [
   {
     href: '/home',
@@ -87,8 +108,14 @@ const TABS: Tab[] = [
     icon: (active) => <TargetIcon active={active} />,
   },
   {
+    href: '/friends',
+    label: 'Friends',
+    match: ['/friends'],
+    icon: (active) => <PeopleIcon active={active} />,
+  },
+  {
     href: '/leaderboard',
-    label: 'Leaderboard',
+    label: 'Board',
     match: ['/leaderboard'],
     icon: (active) => <TrophyIcon active={active} />,
   },
@@ -109,7 +136,7 @@ export function BottomNav() {
       aria-label="Primary"
       className="fixed bottom-0 inset-x-0 z-20 pb-[max(env(safe-area-inset-bottom),12px)] pt-2 pointer-events-none"
     >
-      <ul className="pointer-events-auto mx-auto flex max-w-sm items-stretch justify-between gap-1 rounded-full bg-surface/95 px-2 py-1.5 shadow-[0_10px_40px_-8px_rgba(10,58,31,0.25)] ring-1 ring-border backdrop-blur-md">
+      <ul className="pointer-events-auto mx-auto flex max-w-sm items-stretch justify-between gap-0.5 rounded-full bg-surface/95 px-1.5 py-1.5 shadow-[0_10px_40px_-8px_rgba(10,58,31,0.25)] ring-1 ring-border backdrop-blur-md">
         {TABS.map((tab) => {
           const active = isActive(pathname, tab);
           return (
@@ -118,7 +145,7 @@ export function BottomNav() {
                 href={tab.href}
                 aria-current={active ? 'page' : undefined}
                 className={[
-                  'flex h-12 items-center justify-center gap-1.5 rounded-full font-body transition-all',
+                  'flex h-12 items-center justify-center gap-1 rounded-full font-body transition-all px-1',
                   active
                     ? 'bg-primary text-white shadow-md shadow-primary/30'
                     : 'text-muted hover:text-text',
@@ -127,7 +154,7 @@ export function BottomNav() {
                 {tab.icon(active)}
                 <span
                   className={[
-                    'text-[11px] font-bold uppercase tracking-widest leading-none',
+                    'text-[10px] font-bold uppercase tracking-wider leading-none',
                     active ? 'inline' : 'hidden sm:inline',
                   ].join(' ')}
                 >

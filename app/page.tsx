@@ -6,5 +6,19 @@ export default async function RootPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  redirect(user ? '/home' : '/login');
+
+  if (!user) redirect('/login');
+
+  // Signed-in but not onboarded → wizard. Missing profile row (trigger lag)
+  // is treated as not-onboarded.
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('onboarded')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile || profile.onboarded !== true) {
+    redirect('/onboarding');
+  }
+  redirect('/home');
 }
