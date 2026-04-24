@@ -15,7 +15,10 @@ export type GrabMapSpot = {
   rarity: 'common' | 'rare' | 'legendary';
   claimed: boolean;
   name: string;
+  order?: number | null;
 };
+
+export type RouteEndpoint = { lat: number; lng: number; label?: string };
 
 interface GrabMapProps {
   initialCenter: [number, number]; // [lng, lat]
@@ -24,6 +27,8 @@ interface GrabMapProps {
   radiusKm?: number;
   userLocation?: { lat: number; lng: number } | null;
   routeGeoJson?: GeoJSON.Feature<GeoJSON.LineString> | null;
+  routeStart?: RouteEndpoint | null;
+  routeEnd?: RouteEndpoint | null;
   onSpotClick?: (spotId: string) => void;
   className?: string;
 }
@@ -39,7 +44,16 @@ function spotsToFC(spots: GrabMapSpot[] | undefined): FC {
     features: spots.map((s) => ({
       type: 'Feature',
       geometry: { type: 'Point', coordinates: [s.lng, s.lat] },
-      properties: { id: s.id, rarity: s.rarity, claimed: s.claimed, name: s.name },
+      properties: {
+        id: s.id,
+        rarity: s.rarity,
+        claimed: s.claimed,
+        name: s.name,
+        order: s.order ?? null,
+        // Use empty string (not null) so MapLibre's text-field expression
+        // renders nothing when there's no order (vs. the literal "null").
+        orderLabel: s.order ? String(s.order) : '',
+      },
     })),
   };
 }
@@ -107,6 +121,34 @@ function routeToData(
   return route;
 }
 
+// Build a pin-shaped marker element with a label badge. `tone` controls the
+// pill colour: 'start' = green, 'end' = accent pink.
+function endpointMarkerEl(tone: 'start' | 'end', label: string): HTMLDivElement {
+  const wrap = document.createElement('div');
+  wrap.style.cssText =
+    'display:flex;flex-direction:column;align-items:center;transform:translateY(-8px);';
+  const pin = document.createElement('div');
+  const color = tone === 'start' ? '#00B14F' : '#FF3D8A';
+  pin.innerHTML = `
+    <svg width="30" height="38" viewBox="0 0 30 38" xmlns="http://www.w3.org/2000/svg">
+      <path d="M15 0C6.7 0 0 6.7 0 15c0 11 15 23 15 23s15-12 15-23C30 6.7 23.3 0 15 0z"
+        fill="${color}" stroke="#fff" stroke-width="2"/>
+      <circle cx="15" cy="15" r="5" fill="#fff"/>
+    </svg>`;
+  pin.style.cssText = 'filter: drop-shadow(0 2px 6px rgba(0,0,0,0.25));';
+  const badge = document.createElement('div');
+  badge.textContent = label.length > 22 ? `${label.slice(0, 20)}…` : label;
+  badge.style.cssText = `
+    margin-top:2px;padding:3px 8px;border-radius:999px;
+    background:${color};color:#fff;
+    font-family: var(--font-archivo-black), 'Arial Black', system-ui, sans-serif;
+    font-size:10px;letter-spacing:0.08em;text-transform:uppercase;
+    white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.2);`;
+  wrap.appendChild(pin);
+  wrap.appendChild(badge);
+  return wrap;
+}
+
 export function GrabMap({
   initialCenter,
   initialZoom = 14,
@@ -114,6 +156,8 @@ export function GrabMap({
   radiusKm,
   userLocation,
   routeGeoJson,
+  routeStart,
+  routeEnd,
   onSpotClick,
   className,
 }: GrabMapProps) {
@@ -123,6 +167,8 @@ export function GrabMap({
   const onSpotClickRef = useRef(onSpotClick);
   const routeFittedRef = useRef(false);
   const spotsFittedRef = useRef(false);
+  const startMarkerRef = useRef<maplibregl.Marker | null>(null);
+  const endMarkerRef = useRef<maplibregl.Marker | null>(null);
 
   useEffect(() => {
     onSpotClickRef.current = onSpotClick;
@@ -190,7 +236,8 @@ export function GrabMap({
         type: 'circle',
         source: 'spots',
         paint: {
-          'circle-radius': 10,
+          // Slightly larger so the number label fits comfortably.
+          'circle-radius': 13,
           'circle-color': [
             'match',
             ['get', 'rarity'],
@@ -203,6 +250,25 @@ export function GrabMap({
             'case',
             ['get', 'claimed'], '#00B14F', '#FFFFFF',
           ],
+        },
+      });
+      // Number badge inside each spot pin — matches the example's
+      // "67-<index>" badge pattern (simplified to just the number).
+      map.addLayer({
+        id: 'spots-number',
+        type: 'symbol',
+        source: 'spots',
+        layout: {
+          'text-field': ['get', 'orderLabel'],
+          'text-font': ['Noto Sans Bold', 'Arial Unicode MS Bold'],
+          'text-size': 11,
+          'text-allow-overlap': true,
+          'text-ignore-placement': true,
+        },
+        paint: {
+          'text-color': '#FFFFFF',
+          'text-halo-color': 'rgba(0,0,0,0.35)',
+          'text-halo-width': 1.2,
         },
       });
 
@@ -322,6 +388,48 @@ export function GrabMap({
       : initialCenter;
     src.setData(radiusFC(center, radiusKm));
   }, [radiusKm, userLocation, initialCenter]);
+
+  // Manage start/end DOM markers imperatively (MapLibre handles DOM markers
+  // better than layers for labelled pins).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (routeStart) {
+      if (!startMarkerRef.current) {
+        startMarkerRef.current = new maplibregl.Marker({
+          element: endpointMarkerEl('start', routeStart.label ?? 'Start'),
+          anchor: 'bottom',
+        })
+          .setLngLat([routeStart.lng, routeStart.lat])
+          .addTo(map);
+      } else {
+        startMarkerRef.current.setLngLat([routeStart.lng, routeStart.lat]);
+      }
+    } else if (startMarkerRef.current) {
+      startMarkerRef.current.remove();
+      startMarkerRef.current = null;
+    }
+  }, [routeStart]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (routeEnd) {
+      if (!endMarkerRef.current) {
+        endMarkerRef.current = new maplibregl.Marker({
+          element: endpointMarkerEl('end', routeEnd.label ?? 'End'),
+          anchor: 'bottom',
+        })
+          .setLngLat([routeEnd.lng, routeEnd.lat])
+          .addTo(map);
+      } else {
+        endMarkerRef.current.setLngLat([routeEnd.lng, routeEnd.lat]);
+      }
+    } else if (endMarkerRef.current) {
+      endMarkerRef.current.remove();
+      endMarkerRef.current = null;
+    }
+  }, [routeEnd]);
 
   // Update route line when prop changes. Fit bounds exactly once per mount.
   useEffect(() => {

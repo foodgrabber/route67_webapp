@@ -92,6 +92,24 @@ export default function NewHuntPage() {
             setStatus('idle');
             return;
           }
+          // Stash suggested polyline + endpoints for /hunt/[id] to render.
+          if (res.routeGeoJson) {
+            try {
+              sessionStorage.setItem(`route:${res.huntId}`, JSON.stringify(res.routeGeoJson));
+              sessionStorage.setItem(
+                `endpoints:${res.huntId}`,
+                JSON.stringify({
+                  start: {
+                    lat: pos.coords.latitude,
+                    lng: pos.coords.longitude,
+                    label: 'You',
+                  },
+                }),
+              );
+            } catch {
+              /* quota / private mode */
+            }
+          }
           router.push(`/hunt/${res.huntId}`);
         } catch (err) {
           setError(err instanceof Error ? err.message : 'Failed to start hunt');
@@ -234,15 +252,22 @@ export default function NewHuntPage() {
         setRouteStatus('idle');
         return;
       }
-      // Stash the route polyline so /hunt/[id] can render it without a schema
-      // change. If the user refreshes, the spots still work.
+      // Stash the route polyline + endpoints so /hunt/[id] can render them
+      // without a schema change. If the user refreshes, spots still work.
       try {
         sessionStorage.setItem(
           `route:${res.huntId}`,
           JSON.stringify(res.routeGeoJson),
         );
+        sessionStorage.setItem(
+          `endpoints:${res.huntId}`,
+          JSON.stringify({
+            start: { lat: startPt.lat, lng: startPt.lng, label: startPt.label },
+            end: { lat: endPt.lat, lng: endPt.lng, label: endPt.label },
+          }),
+        );
       } catch {
-        // private-mode / quota — route just won't render on reload.
+        // private-mode / quota — markers just won't render on reload.
       }
       router.push(`/hunt/${res.huntId}`);
     } catch (err) {

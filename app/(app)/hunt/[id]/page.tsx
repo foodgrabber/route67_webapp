@@ -33,6 +33,7 @@ type SpotRow = {
   rarity: Rarity;
   points: number;
   claimed: boolean;
+  visit_order: number | null;
 };
 
 export default function HuntPage({ params }: { params: Promise<{ id: string }> }) {
@@ -46,30 +47,47 @@ export default function HuntPage({ params }: { params: Promise<{ id: string }> }
   const [loadError, setLoadError] = useState<string | null>(null);
   const [ending, setEnding] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [showStops, setShowStops] = useState(false);
   const [routeGeoJson, setRouteGeoJson] =
     useState<GeoJSON.Feature<GeoJSON.LineString> | null>(null);
+  const [endpoints, setEndpoints] = useState<{
+    start?: { lat: number; lng: number; label?: string };
+    end?: { lat: number; lng: number; label?: string };
+  } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Hydrate route polyline (if this hunt was started in Detour Gang mode).
-  // The polyline is stashed in sessionStorage by /hunt/new before router.push;
-  // schema isn't extended for MVP.
+  // Hydrate route polyline + endpoints from sessionStorage (stashed by
+  // /hunt/new before router.push). Schema isn't extended for MVP.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
       const raw = window.sessionStorage.getItem(`route:${huntId}`);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as GeoJSON.Feature<GeoJSON.LineString>;
-      if (
-        parsed &&
-        parsed.type === 'Feature' &&
-        parsed.geometry?.type === 'LineString' &&
-        Array.isArray(parsed.geometry.coordinates) &&
-        parsed.geometry.coordinates.length >= 2
-      ) {
-        setRouteGeoJson(parsed);
+      if (raw) {
+        const parsed = JSON.parse(raw) as GeoJSON.Feature<GeoJSON.LineString>;
+        if (
+          parsed &&
+          parsed.type === 'Feature' &&
+          parsed.geometry?.type === 'LineString' &&
+          Array.isArray(parsed.geometry.coordinates) &&
+          parsed.geometry.coordinates.length >= 2
+        ) {
+          setRouteGeoJson(parsed);
+        }
       }
     } catch {
       // Ignore malformed sessionStorage entries.
+    }
+    try {
+      const rawEp = window.sessionStorage.getItem(`endpoints:${huntId}`);
+      if (rawEp) {
+        const parsed = JSON.parse(rawEp) as {
+          start?: { lat: number; lng: number; label?: string };
+          end?: { lat: number; lng: number; label?: string };
+        };
+        if (parsed && (parsed.start || parsed.end)) setEndpoints(parsed);
+      }
+    } catch {
+      // Ignore malformed endpoint entries.
     }
   }, [huntId]);
 
@@ -84,9 +102,9 @@ export default function HuntPage({ params }: { params: Promise<{ id: string }> }
           supabase.from('hunts').select('*').eq('id', huntId).single(),
           supabase
             .from('spots')
-            .select('id,name,address,lat,lng,rarity,points,claimed')
+            .select('id,name,address,lat,lng,rarity,points,claimed,visit_order')
             .eq('hunt_id', huntId)
-            .order('rarity'),
+            .order('visit_order', { ascending: true, nullsFirst: false }),
         ]);
       if (cancelled) return;
       if (huntErr || !huntData) {
@@ -127,6 +145,7 @@ export default function HuntPage({ params }: { params: Promise<{ id: string }> }
         rarity: s.rarity,
         claimed: s.claimed,
         name: s.name,
+        order: s.visit_order,
       })),
     [spots],
   );
@@ -211,6 +230,8 @@ export default function HuntPage({ params }: { params: Promise<{ id: string }> }
             radiusKm={routeGeoJson ? undefined : hunt.radius_km}
             userLocation={userPos}
             routeGeoJson={routeGeoJson}
+            routeStart={endpoints?.start ?? null}
+            routeEnd={endpoints?.end ?? null}
             onSpotClick={(id) => setSelectedId(id)}
             className="w-full h-full"
           />
@@ -242,6 +263,17 @@ export default function HuntPage({ params }: { params: Promise<{ id: string }> }
         </div>
         <button
           type="button"
+          onClick={() => setShowStops(true)}
+          className="px-3 rounded-2xl bg-surface border border-border text-text font-display text-sm shadow-sm flex items-center gap-1"
+          aria-label="Show all stops"
+        >
+          <span className="text-[10px] font-bold uppercase tracking-widest text-faint">
+            Stops
+          </span>
+          <span className="text-primary">{spots.length}</span>
+        </button>
+        <button
+          type="button"
           onClick={handleEnd}
           disabled={ending}
           className="px-4 rounded-2xl bg-text text-surface font-display text-sm shadow-sm disabled:opacity-60"
@@ -253,6 +285,101 @@ export default function HuntPage({ params }: { params: Promise<{ id: string }> }
       {toast && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-20 bg-text text-surface px-4 py-2 rounded-full text-sm font-bold shadow-lg">
           {toast}
+        </div>
+      )}
+
+      {/* Ordered stops drawer — matches example's routeStopsList pattern.
+          Stacks start → numbered 67-stops → end with name + address. */}
+      {showStops && (
+        <div
+          className="absolute inset-0 z-30 bg-black/30"
+          onClick={() => setShowStops(false)}
+        >
+          <div
+            className="absolute left-0 right-0 bottom-0 max-h-[80%] bg-surface rounded-t-3xl shadow-2xl flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-5 pt-3 pb-2 flex items-center gap-3 border-b border-border">
+              <div className="w-11 h-1.5 rounded-full bg-border mx-auto absolute left-1/2 -translate-x-1/2 top-2" />
+              <div className="flex-1 pt-2">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-faint">
+                  Route order
+                </div>
+                <div className="font-display text-xl text-text leading-none mt-0.5">
+                  {spots.length} 67-stops
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowStops(false)}
+                className="w-9 h-9 rounded-full bg-surface-alt text-muted font-bold flex items-center justify-center"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+            <ol className="flex-1 overflow-y-auto">
+              {endpoints?.start && (
+                <li className="px-5 py-3 flex items-start gap-3 border-b border-border/60">
+                  <span className="flex-shrink-0 rounded-full bg-primary text-white font-display text-[10px] uppercase tracking-widest px-2.5 py-1">
+                    Start
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-bold text-text truncate">
+                      {endpoints.start.label ?? 'Start'}
+                    </div>
+                  </div>
+                </li>
+              )}
+              {spots.map((s, i) => (
+                <li
+                  key={s.id}
+                  className={`px-5 py-3 flex items-start gap-3 border-b border-border/60 hover:bg-surface-alt cursor-pointer ${
+                    s.claimed ? 'opacity-60' : ''
+                  }`}
+                  onClick={() => {
+                    setSelectedId(s.id);
+                    setShowStops(false);
+                  }}
+                >
+                  <span
+                    className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center font-display text-sm ${
+                      s.claimed
+                        ? 'bg-primary text-white'
+                        : s.rarity === 'legendary'
+                        ? 'bg-rarity-legendary/20 text-rarity-legendary ring-1 ring-rarity-legendary/40'
+                        : s.rarity === 'rare'
+                        ? 'bg-rarity-rare/20 text-rarity-rare ring-1 ring-rarity-rare/40'
+                        : 'bg-surface-alt text-muted ring-1 ring-border'
+                    }`}
+                  >
+                    {s.claimed ? '✓' : s.visit_order ?? i + 1}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-bold text-text truncate">{s.name}</div>
+                    {s.address && (
+                      <div className="text-[11px] text-muted truncate mt-0.5">
+                        {s.address}
+                      </div>
+                    )}
+                  </div>
+                  <RarityChip rarity={s.rarity} className="flex-shrink-0" />
+                </li>
+              ))}
+              {endpoints?.end && (
+                <li className="px-5 py-3 flex items-start gap-3">
+                  <span className="flex-shrink-0 rounded-full bg-accent text-white font-display text-[10px] uppercase tracking-widest px-2.5 py-1">
+                    End
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-bold text-text truncate">
+                      {endpoints.end.label ?? 'End'}
+                    </div>
+                  </div>
+                </li>
+              )}
+            </ol>
+          </div>
         </div>
       )}
 

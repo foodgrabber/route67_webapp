@@ -212,7 +212,12 @@ export async function startHunt(
       return { error: huntErr?.message || 'Failed to create hunt' };
     }
 
-    const spotRows = withDist.map((s) => {
+    // Nearest-neighbor order from the user — this is the visit order we both
+    // store on spots and use to build the suggested polyline.
+    const origin = { lat: userLat, lng: userLng };
+    const ordered = nearestNeighborOrder(origin, withDist);
+
+    const spotRows = ordered.map((s, i) => {
       const rarity = bucketRarity(s.dist, maxDist);
       return {
         hunt_id: hunt.id,
@@ -223,6 +228,7 @@ export async function startHunt(
         lng: s.lng,
         rarity,
         points: POINTS_BY_RARITY[rarity],
+        visit_order: i + 1,
       };
     });
 
@@ -232,14 +238,12 @@ export async function startHunt(
       return { error: spotsErr.message };
     }
 
-    // Build a suggested walking path through the 67-spots: nearest-neighbor
-    // order from the user, cap waypoints at 8 (URL-length safety). End the
-    // route at the farthest sampled spot so fetchRoute has a distinct end.
+    // Build a suggested walking path through the 67-spots: cap waypoints at 8
+    // (URL-length safety). End at the farthest sampled spot so fetchRoute has
+    // a distinct end.
     let routeGeoJson: RouteLineString | undefined;
-    if (withDist.length >= 2) {
+    if (ordered.length >= 2) {
       try {
-        const origin = { lat: userLat, lng: userLng };
-        const ordered = nearestNeighborOrder(origin, withDist);
         const maxWaypoints = 8;
         const sampled =
           ordered.length <= maxWaypoints
@@ -383,7 +387,7 @@ export async function startRouteHunt(
       return { error: huntErr?.message || 'Failed to create hunt' };
     }
 
-    const spotRows = picked.map((s) => {
+    const spotRows = picked.map((s, i) => {
       const rarity = bucketRarity(s.distFromRoute, maxDistFromRoute);
       return {
         hunt_id: hunt.id,
@@ -394,6 +398,7 @@ export async function startRouteHunt(
         lng: s.lng,
         rarity,
         points: POINTS_BY_RARITY[rarity],
+        visit_order: i + 1,
       };
     });
 
