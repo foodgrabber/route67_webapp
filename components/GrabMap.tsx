@@ -23,6 +23,7 @@ interface GrabMapProps {
   spots?: GrabMapSpot[];
   radiusKm?: number;
   userLocation?: { lat: number; lng: number } | null;
+  routeGeoJson?: GeoJSON.Feature<GeoJSON.LineString> | null;
   onSpotClick?: (spotId: string) => void;
   className?: string;
 }
@@ -91,12 +92,28 @@ function radiusFC(
   return { type: 'FeatureCollection', features: [circlePolygon(center, radiusKm)] };
 }
 
+const EMPTY_LINE: GeoJSON.Feature<GeoJSON.LineString> = {
+  type: 'Feature',
+  properties: {},
+  geometry: { type: 'LineString', coordinates: [] },
+};
+
+function routeToData(
+  route: GeoJSON.Feature<GeoJSON.LineString> | null | undefined,
+): GeoJSON.Feature<GeoJSON.LineString> {
+  if (!route || !route.geometry || route.geometry.coordinates.length < 2) {
+    return EMPTY_LINE;
+  }
+  return route;
+}
+
 export function GrabMap({
   initialCenter,
   initialZoom = 14,
   spots,
   radiusKm,
   userLocation,
+  routeGeoJson,
   onSpotClick,
   className,
 }: GrabMapProps) {
@@ -104,6 +121,7 @@ export function GrabMap({
   const mapRef = useRef<MapLibreMap | null>(null);
   const loadedRef = useRef(false);
   const onSpotClickRef = useRef(onSpotClick);
+  const routeFittedRef = useRef(false);
 
   useEffect(() => {
     onSpotClickRef.current = onSpotClick;
@@ -137,6 +155,23 @@ export function GrabMap({
         type: 'line',
         source: 'radius',
         paint: { 'line-color': '#FF3D8A', 'line-opacity': 0.6, 'line-width': 2 },
+      });
+
+      // Route layers go under spots. White casing first, Grab-green stroke on top.
+      map.addSource('route', { type: 'geojson', data: EMPTY_LINE });
+      map.addLayer({
+        id: 'route-casing',
+        type: 'line',
+        source: 'route',
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': '#FFFFFF', 'line-width': 8, 'line-opacity': 0.9 },
+      });
+      map.addLayer({
+        id: 'route-stroke',
+        type: 'line',
+        source: 'route',
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': '#00B14F', 'line-width': 4.5 },
       });
 
       map.addSource('spots', { type: 'geojson', data: EMPTY_FC });
@@ -190,6 +225,25 @@ export function GrabMap({
       (map.getSource('radius') as maplibregl.GeoJSONSource).setData(
         radiusFC(userLocation ? [userLocation.lng, userLocation.lat] : initialCenter, radiusKm),
       );
+      (map.getSource('route') as maplibregl.GeoJSONSource).setData(
+        routeToData(routeGeoJson ?? null),
+      );
+      if (
+        !routeFittedRef.current &&
+        routeGeoJson &&
+        routeGeoJson.geometry.coordinates.length >= 2
+      ) {
+        const coords = routeGeoJson.geometry.coordinates;
+        const bounds = coords.reduce(
+          (b, c) => b.extend(c as [number, number]),
+          new maplibregl.LngLatBounds(
+            coords[0] as [number, number],
+            coords[0] as [number, number],
+          ),
+        );
+        map.fitBounds(bounds, { padding: 60, duration: 0 });
+        routeFittedRef.current = true;
+      }
 
       map.on('click', 'spots-layer', (e) => {
         const f = e.features?.[0];
@@ -239,6 +293,31 @@ export function GrabMap({
       : initialCenter;
     src.setData(radiusFC(center, radiusKm));
   }, [radiusKm, userLocation, initialCenter]);
+
+  // Update route line when prop changes. Fit bounds exactly once per mount.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loadedRef.current) return;
+    const src = map.getSource('route') as maplibregl.GeoJSONSource | undefined;
+    if (!src) return;
+    src.setData(routeToData(routeGeoJson ?? null));
+    if (
+      !routeFittedRef.current &&
+      routeGeoJson &&
+      routeGeoJson.geometry.coordinates.length >= 2
+    ) {
+      const coords = routeGeoJson.geometry.coordinates;
+      const bounds = coords.reduce(
+        (b, c) => b.extend(c as [number, number]),
+        new maplibregl.LngLatBounds(
+          coords[0] as [number, number],
+          coords[0] as [number, number],
+        ),
+      );
+      map.fitBounds(bounds, { padding: 60, duration: 400 });
+      routeFittedRef.current = true;
+    }
+  }, [routeGeoJson]);
 
   return <div ref={containerRef} className={className ?? 'w-full h-full'} />;
 }

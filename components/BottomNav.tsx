@@ -107,9 +107,9 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed bottom-0 inset-x-0 z-20 h-20 bg-surface border-t border-border pb-[env(safe-area-inset-bottom)]"
+      className="fixed bottom-0 inset-x-0 z-20 pb-[max(env(safe-area-inset-bottom),12px)] pt-2 pointer-events-none"
     >
-      <ul className="flex h-full items-stretch">
+      <ul className="pointer-events-auto mx-auto flex max-w-sm items-stretch justify-between gap-1 rounded-full bg-surface/95 px-2 py-1.5 shadow-[0_10px_40px_-8px_rgba(10,58,31,0.25)] ring-1 ring-border backdrop-blur-md">
         {TABS.map((tab) => {
           const active = isActive(pathname, tab);
           return (
@@ -118,14 +118,19 @@ export function BottomNav() {
                 href={tab.href}
                 aria-current={active ? 'page' : undefined}
                 className={[
-                  'flex h-full flex-col items-center justify-center gap-1 font-body',
+                  'flex h-12 items-center justify-center gap-1.5 rounded-full font-body transition-all',
                   active
-                    ? 'text-primary font-semibold'
-                    : 'text-muted font-medium',
+                    ? 'bg-primary text-white shadow-md shadow-primary/30'
+                    : 'text-muted hover:text-text',
                 ].join(' ')}
               >
                 {tab.icon(active)}
-                <span className="text-[11px] leading-none tracking-wide">
+                <span
+                  className={[
+                    'text-[11px] font-bold uppercase tracking-widest leading-none',
+                    active ? 'inline' : 'hidden sm:inline',
+                  ].join(' ')}
+                >
                   {tab.label}
                 </span>
               </Link>

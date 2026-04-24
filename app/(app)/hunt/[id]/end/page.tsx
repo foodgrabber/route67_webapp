@@ -50,76 +50,140 @@ export default async function EndPage({
   const duration = formatDuration(end.getTime() - start.getTime());
 
   return (
-    <div className="relative min-h-full bg-bg overflow-hidden">
-      {/* green hero ribbon */}
+    <div className="relative min-h-full overflow-hidden bg-bg">
+      {/* green hero ribbon (fades into bg) */}
       <div
-        className="absolute top-0 left-0 right-0 h-96 bg-gradient-to-b from-primary via-primary-dark to-bg"
         aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-[440px] bg-gradient-to-b from-primary via-primary/90 to-bg"
       />
 
-      <div className="relative px-4 pt-14 pb-16 max-w-md mx-auto flex flex-col items-center text-center">
-        <Shield67 size={88} />
-        <div className="mt-5 inline-block px-3 py-1 rounded-full bg-black/25 text-white text-[11px] font-bold tracking-wider uppercase">
+      {/* Soft 67 rain behind content. Time-boxed: static gradient of 12 rotated "67" */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden opacity-[0.16]">
+        {Array.from({ length: 12 }).map((_, i) => {
+          const left = `${(i * 37) % 100}%`;
+          const delay = `${(i * 0.25).toFixed(2)}s`;
+          const duration = `${4 + (i % 4)}s`;
+          const size = `${22 + (i % 5) * 8}px`;
+          return (
+            <div
+              key={i}
+              className="absolute -top-12 font-display leading-none tracking-tight text-white select-none"
+              style={{
+                left,
+                fontSize: size,
+                animation: `r67-fall-rain ${duration} linear ${delay} infinite`,
+              }}
+            >
+              67
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="relative mx-auto flex max-w-md flex-col items-center px-4 pt-12 pb-8 text-center text-white">
+        {/* ribbon label */}
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center rounded-full bg-black/25 px-3 py-1 text-[10px] font-black uppercase tracking-widest backdrop-blur">
+            W · Hunt complete
+          </span>
+        </div>
+
+        {/* Shield — centered, scaled up, with pop-in */}
+        <div className="mt-6 r67-pop-in">
+          <Shield67 size={128} />
+        </div>
+
+        <div className="mt-3 text-[11px] font-bold uppercase tracking-widest text-white/75">
           Certified Sigma
         </div>
-        <h1 className="mt-3 font-display text-5xl text-white leading-none tracking-tight">
-          HUNT COMPLETE
+
+        <h1 className="mt-3 font-display text-5xl leading-none tracking-tight drop-shadow-md">
+          HUNT COMPLETE FR
         </h1>
-        <p className="mt-2 text-white/85 text-sm italic">
+        <p className="mt-3 text-sm italic text-white/90">
           every 67 in the radius: collected
         </p>
 
-        <div className="mt-6 inline-flex items-baseline gap-1 text-white">
-          <span className="text-xs font-bold tracking-wide opacity-80">+</span>
-          <span className="font-display text-7xl leading-none tracking-tight drop-shadow">
+        {/* Big XP number */}
+        <div className="mt-8 inline-flex items-baseline gap-2">
+          <span className="text-xs font-black uppercase tracking-widest text-white/85">
+            +
+          </span>
+          <span className="font-display text-[96px] leading-none tracking-tight drop-shadow-[0_6px_24px_rgba(0,0,0,0.35)]">
             {hunt.points}
           </span>
-          <span className="text-lg font-bold tracking-wide">XP</span>
+          <span className="text-xl font-black uppercase tracking-widest">
+            XP
+          </span>
         </div>
 
-        <div className="mt-8 w-full bg-surface border border-border rounded-2xl shadow-sm p-5 grid grid-cols-3 gap-2 text-center">
-          <div>
-            <div className="font-display text-3xl text-text leading-none">{claimed}</div>
-            <div className="mt-1 text-[10px] font-bold uppercase tracking-wide text-faint">
+        {/* Stat row */}
+        <div className="mt-8 grid w-full grid-cols-3 rounded-3xl border border-border bg-surface text-text shadow-lg shadow-black/5 overflow-hidden">
+          <div className="py-4 px-2">
+            <div className="font-display text-4xl leading-none tracking-tight">
+              {claimed}
+            </div>
+            <div className="mt-2 text-[10px] font-bold uppercase tracking-widest text-faint">
               Spots
             </div>
           </div>
-          <div className="border-x border-border">
-            <div className="font-display text-3xl text-primary leading-none">
+          <div className="border-x border-border py-4 px-2">
+            <div className="font-display text-4xl leading-none tracking-tight text-primary">
               {hunt.points}
             </div>
-            <div className="mt-1 text-[10px] font-bold uppercase tracking-wide text-faint">
+            <div className="mt-2 text-[10px] font-bold uppercase tracking-widest text-faint">
               Points
             </div>
           </div>
-          <div>
-            <div className="font-display text-2xl text-text leading-none">{duration}</div>
-            <div className="mt-1 text-[10px] font-bold uppercase tracking-wide text-faint">
+          <div className="py-4 px-2">
+            <div className="font-display text-2xl leading-none tracking-tight">
+              {duration}
+            </div>
+            <div className="mt-2 text-[10px] font-bold uppercase tracking-widest text-faint">
               Time
             </div>
           </div>
         </div>
 
-        <div className="mt-4 w-full bg-surface border border-border rounded-2xl shadow-sm p-4 text-left">
-          <div className="text-[10px] font-bold uppercase tracking-wide text-faint">
-            Hunt radius
-          </div>
-          <div className="mt-1 font-display text-2xl text-text leading-none">
-            {hunt.radius_km} km
+        {/* Radius card */}
+        <div className="mt-3 w-full rounded-3xl border border-border bg-surface p-5 text-left shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-widest text-faint">
+                Hunt radius
+              </div>
+              <div className="mt-1 font-display text-3xl leading-none tracking-tight text-text">
+                {hunt.radius_km}
+                <span className="ml-1 text-sm font-bold text-muted">KM</span>
+              </div>
+            </div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-primary-dark bg-primary-tint px-3 py-1 rounded-full">
+              Locked
+            </div>
           </div>
         </div>
 
+        {/* CTAs */}
         <Link
-          href="/"
-          className="mt-8 w-full inline-flex items-center justify-center rounded-2xl bg-primary text-white font-display tracking-wide text-lg py-4 shadow-lg hover:bg-primary-dark"
+          href="/leaderboard"
+          className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary text-white font-display text-lg tracking-tight py-4 shadow-lg shadow-primary/30 hover:bg-primary-dark transition"
         >
-          Back to map
+          <span className="text-lg" aria-hidden>
+            🏆
+          </span>
+          See the board
         </Link>
         <Link
           href="/hunt/new"
-          className="mt-3 w-full inline-flex items-center justify-center rounded-2xl bg-surface text-text border border-border font-display tracking-wide text-base py-3"
+          className="mt-3 flex w-full items-center justify-center rounded-2xl border border-border bg-surface text-text font-display text-base tracking-tight py-3.5 hover:bg-surface-alt transition"
         >
           Hunt again
+        </Link>
+        <Link
+          href="/home"
+          className="mt-2 text-[11px] font-bold uppercase tracking-widest text-muted hover:text-text py-2"
+        >
+          ← Back to map
         </Link>
       </div>
     </div>

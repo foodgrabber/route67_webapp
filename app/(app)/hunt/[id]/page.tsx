@@ -46,7 +46,32 @@ export default function HuntPage({ params }: { params: Promise<{ id: string }> }
   const [loadError, setLoadError] = useState<string | null>(null);
   const [ending, setEnding] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [routeGeoJson, setRouteGeoJson] =
+    useState<GeoJSON.Feature<GeoJSON.LineString> | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Hydrate route polyline (if this hunt was started in Detour Gang mode).
+  // The polyline is stashed in sessionStorage by /hunt/new before router.push;
+  // schema isn't extended for MVP.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = window.sessionStorage.getItem(`route:${huntId}`);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as GeoJSON.Feature<GeoJSON.LineString>;
+      if (
+        parsed &&
+        parsed.type === 'Feature' &&
+        parsed.geometry?.type === 'LineString' &&
+        Array.isArray(parsed.geometry.coordinates) &&
+        parsed.geometry.coordinates.length >= 2
+      ) {
+        setRouteGeoJson(parsed);
+      }
+    } catch {
+      // Ignore malformed sessionStorage entries.
+    }
+  }, [huntId]);
 
   // Initial load of hunt + spots.
   useEffect(() => {
@@ -136,6 +161,23 @@ export default function HuntPage({ params }: { params: Promise<{ id: string }> }
     showToast(`+${result.points_awarded} claimed`);
   }
 
+  async function handleDemoCheckIn(spot: SpotRow) {
+    if (spot.claimed) return;
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc('check_in_spot', {
+      p_hunt_id: huntId,
+      p_spot_id: spot.id,
+      p_user_lat: spot.lat,
+      p_user_lng: spot.lng,
+    });
+    if (error) {
+      showToast(error.message);
+      return;
+    }
+    const r = (data ?? {}) as { points_awarded?: number };
+    handleCheckInSuccess(spot.id, { points_awarded: r.points_awarded ?? spot.points });
+  }
+
   const distanceLabel = (() => {
     if (!selected || !userPos) return null;
     const d = haversineMeters(userPos, { lat: selected.lat, lng: selected.lng });
@@ -165,8 +207,9 @@ export default function HuntPage({ params }: { params: Promise<{ id: string }> }
           initialCenter={initialCenter}
           initialZoom={14}
           spots={mapSpots}
-          radiusKm={hunt?.radius_km}
+          radiusKm={routeGeoJson ? undefined : hunt?.radius_km}
           userLocation={userPos}
+          routeGeoJson={routeGeoJson}
           onSpotClick={(id) => setSelectedId(id)}
           className="w-full h-full"
         />
@@ -247,6 +290,15 @@ export default function HuntPage({ params }: { params: Promise<{ id: string }> }
               disabled={selected.claimed}
               onSuccess={(result) => handleCheckInSuccess(selected.id, result)}
             />
+            {!selected.claimed && (
+              <button
+                type="button"
+                onClick={() => handleDemoCheckIn(selected)}
+                className="mt-2 w-full text-[11px] uppercase tracking-widest font-bold text-faint hover:text-muted py-2"
+              >
+                📍 Demo: claim without walking
+              </button>
+            )}
           </div>
         </div>
       )}
