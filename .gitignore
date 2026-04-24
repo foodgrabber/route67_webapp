@@ -12,3 +12,9 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+
+# Supabase CLI
+supabase/.temp/
+
+# Vercel CLI
+.vercel/
