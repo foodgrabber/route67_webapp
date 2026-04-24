@@ -2,7 +2,7 @@
 
 A location-based competitive game built for the **GrabMaps API Hackathon** (Singapore, 24 Apr 2026).
 
-Live: **https://route67-dadevchias-projects.vercel.app**
+Live: **https://route67.vercel.app**
 
 ## The Idea
 

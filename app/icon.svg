@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 116" width="110" height="116">
+  <path d="M55 4 L104 22 L104 62 Q104 98 55 112 Q6 98 6 62 L6 22 Z" fill="#EF2B2D" stroke="#fff" stroke-width="3"/>
+  <path d="M55 13 L96 28 L96 62 Q96 91 55 103 Q14 91 14 62 L14 28 Z" fill="#fff"/>
+  <path d="M55 13 L96 28 L96 38 L14 38 L14 28 Z" fill="#EF2B2D"/>
+  <text x="55" y="34" text-anchor="middle" font-family="'Archivo Black','Arial Black',sans-serif" font-size="13" font-weight="900" fill="#fff" letter-spacing="3">ROUTE</text>
+  <text x="55" y="82" text-anchor="middle" font-family="'Archivo Black','Arial Black',sans-serif" font-size="48" font-weight="900" fill="#EF2B2D" letter-spacing="-2">67</text>
+  <path d="M14 90 L96 90 L96 98 Q55 108 14 98 Z" fill="#EF2B2D"/>
+  <text x="55" y="97" text-anchor="middle" font-family="'Archivo Black','Arial Black',sans-serif" font-size="9" font-weight="900" fill="#fff" letter-spacing="1.5">SINGAPORE</text>
+</svg>
